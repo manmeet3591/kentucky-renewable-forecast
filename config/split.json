@@ -1,0 +1,16 @@
+{
+  "_note": "Locked 2026-11-13 before any model fitting. Do not edit after fitting; the git history is the record.",
+  "hourly_eia930": {
+    "train": ["2024-07-01", "2025-06-30"],
+    "valid": ["2025-07-01", "2025-12-31"],
+    "test":  ["2026-01-01", "2026-10-31"],
+    "rule": "Correction form is chosen on valid using a train-only fit. The chosen form is then refit on train+valid and scored once on test."
+  },
+  "monthly_eia923": {
+    "calibrate": ["2024-07", "2025-12"],
+    "test": ["2026-01", "2026-08"],
+    "rule": "Plant-level monthly totals; 2026 months are EIA-923 year-to-date (monthly respondents only, annual respondents are EIA estimates and are excluded from scoring)."
+  },
+  "balancing_areas": ["LGEE", "TVA", "PJM", "MISO"],
+  "leads": {"d1": "24-47 h (HRRR)", "d2": "48-71 h (GFS)", "d3": "72-95 h (GFS)"}
+}
