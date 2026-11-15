@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kentucky Renewable Forecast</title>
+<meta name="description" content="Day-ahead to 3-day solar and wind generation forecasts for LG&E-KU, TVA, PJM and MISO: pvlib and turbine power curves on archived HRRR/GFS forecasts, a light statistical correction, scored on held-out 2026 data against EIA-930 and EIA-923.">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<link rel="stylesheet" href="style.css?v=1">
+</head>
+<body>
+<header class="top">
+  <div>
+    <h1>Kentucky Renewable Forecast</h1>
+    <p class="sub">Solar and wind, 1–3 days ahead · LG&amp;E-KU, TVA, PJM, MISO · physics on archived HRRR/GFS forecasts + light correction, scored on held-out 2026</p>
+  </div>
+  <nav class="tabs" role="tablist">
+    <button role="tab" aria-selected="true" data-view="plants">Plants</button>
+    <button role="tab" aria-selected="false" data-view="fc">Forecast vs actual</button>
+    <button role="tab" aria-selected="false" data-view="skill">Error &amp; skill</button>
+    <button role="tab" aria-selected="false" data-view="method">Method &amp; limits</button>
+  </nav>
+</header>
+
+<main id="app">
+  <!-- ---------- plants ---------- -->
+  <div class="pane" id="v-plants">
+    <aside class="controls" aria-label="Plant filters">
+      <section>
+        <h2>Technology</h2>
+        <label class="chk"><input type="checkbox" id="fSolar" checked> <span class="sw solar"></span> Solar PV <span class="n" id="nSolar"></span></label>
+        <label class="chk"><input type="checkbox" id="fWind" checked> <span class="sw wind"></span> Wind <span class="n" id="nWind"></span></label>
+      </section>
+      <section>
+        <h2>Balancing area</h2>
+        <div id="fBa"></div>
+        <p class="hint">Balancing area as reported in EIA-860M. Plants physically in Kentucky sit in LGEE, TVA, PJM (EKPC, Duke Kentucky) and MISO (Big Rivers).</p>
+      </section>
+      <section>
+        <h2>Area</h2>
+        <div class="seg" id="fArea">
+          <button data-a="all" class="on">All</button>
+          <button data-a="near">KY + neighbours</button>
+          <button data-a="ky">Kentucky</button>
+        </div>
+        <p class="hint">Kentucky has no utility-scale wind, so wind here comes from neighbouring states and the wider PJM / MISO fleets.</p>
+      </section>
+      <section>
+        <h2>Plant</h2>
+        <input id="search" list="plantList" placeholder="Search by name" style="width:100%;font:inherit;padding:5px 8px;border:1px solid var(--ring);border-radius:6px;background:var(--surface);color:var(--ink)">
+        <datalist id="plantList"></datalist>
+      </section>
+    </aside>
+    <section class="view mapv">
+      <div id="map" role="region" aria-label="Map of solar and wind plants"></div>
+      <div class="legend" id="legend"></div>
+    </section>
+    <aside class="detail" aria-label="Fleet and plant detail">
+      <div class="kpis" id="pKpis"></div>
+      <div id="plant"><p class="empty">Click a plant for its details and, for plants near Kentucky, its monthly EIA-923 output against the calibrated day-ahead model.</p></div>
+      <h2 class="mt">Installed now, by area</h2>
+      <div class="tablewrap"><table id="capTbl"></table></div>
+    </aside>
+  </div>
+
+  <!-- ---------- forecast vs actual ---------- -->
+  <div class="pane hidden" id="v-fc">
+    <aside class="controls" aria-label="Forecast controls">
+      <section>
+        <h2>Series (EIA-930)</h2>
+        <div class="seg col" id="fcSeries"></div>
+      </section>
+      <section>
+        <h2>Lead time</h2>
+        <div class="seg" id="fcLead">
+          <button data-l="d1" class="on">Day 1</button><button data-l="d2">Day 2</button><button data-l="d3">Day 3</button>
+        </div>
+        <p class="hint">Day 1 = 24–47 h before the hour (HRRR). Days 2–3 = 48–95 h (GFS).</p>
+      </section>
+      <section>
+        <h2>Also show</h2>
+        <label class="chk"><input type="checkbox" id="showRaw"> Physics only (uncorrected)</label>
+        <label class="chk"><input type="checkbox" id="showClim"> Climatology baseline</label>
+      </section>
+      <p class="hint">Test period only: <span class="testp"></span>. These hours were held out of every fit.</p>
+    </aside>
+    <section class="view scroll" id="fcView">
+      <div class="chart" id="chDaily"></div>
+      <div class="chart" id="chWeek"></div>
+    </section>
+    <aside class="detail" aria-label="Scores for this series">
+      <div id="fcCard"></div>
+    </aside>
+  </div>
+
+  <!-- ---------- skill ---------- -->
+  <div class="pane hidden" id="v-skill">
+    <aside class="controls" aria-label="Skill controls">
+      <section>
+        <h2>Series</h2>
+        <div class="seg col" id="skSeries"></div>
+      </section>
+      <section>
+        <h2>Error metric</h2>
+        <div class="seg" id="skMetric"><button data-m="nrmse" class="on">nRMSE</button><button data-m="nmae">nMAE</button><button data-m="bias">Bias</button></div>
+        <p class="hint">All errors are in % of installed capacity in the model. Solar is scored on daylight hours only.</p>
+      </section>
+    </aside>
+    <section class="view scroll">
+      <div class="chart" id="chLead"></div>
+      <div class="chart" id="chWx"></div>
+      <h2 class="mt">All series, test period</h2>
+      <div class="tablewrap"><table id="skTbl"></table></div>
+      <h2 class="mt">Monthly plant totals vs EIA-923 (test months)</h2>
+      <div class="tablewrap"><table id="t923"></table></div>
+      <p class="hint" id="t923note"></p>
+    </section>
+    <aside class="detail" aria-label="Notes">
+      <div id="skCard"></div>
+      <h2 class="mt">HRRR vs GFS at Kentucky solar sites</h2>
+      <div id="leadDiag"></div>
+    </aside>
+  </div>
+
+  <!-- ---------- method ---------- -->
+  <div class="pane hidden" id="v-method" style="grid-template-columns:1fr">
+    <section class="view scroll prose" id="methodText"></section>
+  </div>
+</main>
+<footer class="foot">Disaster Science Operations Center · prototype · data: EIA-860, EIA-860M, EIA-923, EIA-930, NOAA HRRR &amp; GFS via Open-Meteo · built <span class="built"></span></footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="charts.js?v=1"></script>
+<script src="app.js?v=1"></script>
+</body>
+</html>
