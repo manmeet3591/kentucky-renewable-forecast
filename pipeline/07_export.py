@@ -77,9 +77,8 @@ def eia923(g):
     summary["near_ky_wind"] = summ(te[near & (te.tech == "wind")])
     summary["ky"] = summ(te[te.plant_id.isin(g[g.in_ky].plant_id)])
     summary["factors"] = {f"{b}_{t}": r(v, 3) for (b, t), v in fac.items()}
-    per_plant = te.groupby("plant_id").agg(a=("mwh_a", "sum"), f=("corr", "sum"), n=("ym", "size"),
-                                           ape=("corr", lambda s: np.nan))
-    ape = ((te.corr - te.mwh_a).abs() / te.mwh_a * 100).groupby(te.plant_id).median()
+    per_plant = te.groupby("plant_id").agg(a=("mwh_a", "sum"), f=("corr", "sum"), n=("ym", "size"))
+    ape = ((te["corr"] - te.mwh_a).abs() / te.mwh_a * 100).groupby(te.plant_id).median()
     per_plant["ape"] = ape
     # monthly series for KY plants (for the plant panel)
     allm = pm.merge(act, on=["plant_id", "year", "month"], how="outer", suffixes=("_f", "_a"))
@@ -111,7 +110,7 @@ def weather_types(ts):
         df["cls"] = cls.reindex(day).values
         df["season"] = season.values
         if tech == "solar":
-            df = df[(df.clim > 0) | (df.actual > 0.005 * df.cap)]
+            df = df[(df.clim > 0.005 * df.cap) | (df.actual > 0.005 * df.cap)]
         res = {}
         for col in ["cls", "season"]:
             res[col] = {}

@@ -9,7 +9,7 @@ on held-out 2026 periods that were locked before fitting.
 Dashboard: `docs/` (static, GitHub Pages ready). Open `docs/index.html` through any static server:
 
 ```bash
-python3 -m http.server -d docs 8767
+python3 -m http.server -d docs 8771
 ```
 
 ## Pipeline

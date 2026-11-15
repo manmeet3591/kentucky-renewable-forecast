@@ -17,12 +17,14 @@ months, applied to each plant's monthly day-ahead physics in the test months.
 Writes data/proc/scores.json and the dashboard data in docs/data/.
 """
 import json
+import warnings
 
 import numpy as np
 import pandas as pd
 from sklearn.ensemble import HistGradientBoostingRegressor
 from sklearn.linear_model import Ridge
 
+warnings.filterwarnings("ignore")
 PROC = "data/proc"
 DOCS = "docs/data"
 SPLIT = json.load(open("config/split.json"))
@@ -147,7 +149,7 @@ def main():
             f_raw, f_best = run("raw", tv), run(best, tv)
             pers = yser.reindex(d.time - pd.Timedelta(hours=24 * k)).values
             clim_all = pd.Series(clim(tr | va), index=df.index).loc[d.index].values * d.cap.values
-            ok = tem & np.isfinite(pers)
+            ok = tem & np.isfinite(pers) & np.isfinite(clim_all)  # every method scored on the same hours
             r = {"raw": score(f_raw, ok), "corrected": score(f_best, ok),
                  "persistence": score(pers, ok), "climatology": score(clim_all, ok)}
             r["corrected"]["form"] = best
